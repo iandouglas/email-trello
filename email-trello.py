@@ -3,21 +3,26 @@ import webapp2
 import sys
 import string
 from httplib import HTTPSConnection
-import urllib
+#import urllib
 from urllib import urlencode
 from datetime import datetime
-import exceptions
+#import exceptions
 import json
 
 # TODO put your real API key here
 api_key = '1234567890abcdef1234567890abcdef'
-# put a real perma_token here, or rewrite the session with oauth to get a real
-# token for a day or month at a time, authenticate/authorize the app to Trello, etc.
+"""
+put a real permanent token here, or rewrite the session with oauth to get a real
+token for a day or month at a time, authenticate/authorize the app to Trello,
+etc.
+"""
 perma_token = '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef'
 
 
 class ResourceUnavailable(Exception):
-    """Exception representing a failed request to a resource"""
+    """
+    Exception representing a failed request to a resource
+    """
 
     def __init__(self, msg, http_response):
         Exception.__init__(self)
@@ -25,7 +30,8 @@ class ResourceUnavailable(Exception):
         self._status = http_response.status
 
     def __str__(self):
-        return "Resource unavailable: %s (HTTP status: %s)" % (self._msg, self._status)
+        return "Resource unavailable: %s (HTTP status: %s)" % (self._msg,
+                                                               self._status)
 
 
 class Unauthorized(ResourceUnavailable):
@@ -33,49 +39,66 @@ class Unauthorized(ResourceUnavailable):
 
 
 class TrelloClient(object):
-    """ Base class for Trello API access """
+    """
+    Base class for Trello API access
+    Pulled from py-trello, and modified slightly to be more compatible with
+    appengine; slight tweaks for PEP8
+    https://github.com/sarumont/py-trello
+    """
 
     def list_boards(self):
         """
         Returns all boards for your Trello session
-        Trello doesn't natively support this, so I do a horrible, horrible thing and loop
-        through a massive group of searches.
+        Trello doesn't natively support this, so I do a horrible, horrible thing
+        and loop through a massive group of searches.
 
-        :return: a list of Python objects representing the Trello boards. Each board has the
-        following noteworthy attributes:
+        :return: a list of Python objects representing the Trello boards. Each
+        board has the following noteworthy attributes:
             - id: the board's identifier
             - name: Name of the board
         """
         boards = []
         letters = string.ascii_lowercase + string.digits
         for letter in list(letters):
-            json_obj = fetch_json('/search/', query_params={'modelTypes': 'boards', 'query': letter, 'partial': 'true'})
+            json_obj = fetch_json('/search/', query_params={
+                'modelTypes': 'boards',
+                'query': letter,
+                'partial': 'true'})
             if 'boards' in json_obj and len(json_obj['boards']):
                 for board_obj in json_obj['boards']:
                     tmp_board = json.dumps({
                         'id': board_obj['id'],
                         # force lowercase and strip spaces and dashes
-                        'name': board_obj['name'].lower().replace(' ', '').replace('-', '')
+                        'name': board_obj['name'].lower()
+                            .replace(' ', '')
+                            .replace('-', '')
                         })
                     if tmp_board not in boards:
                         boards.append(tmp_board)
         return boards
 
     def get_board(self, board_id):
-        """ fetch a board object based on id """
+        """
+        Fetch a board object based on id
+        """
         obj = fetch_json('/boards/' + board_id)
         return Board(board_id=board_id, name=obj['name'])
         # return obj  # self._board_from_json(obj)
 
     def get_list(self, list_id):
-        """ fetch a list object based on id """
+        """
+        Fetch a list object based on id
+        """
         obj = fetch_json('/lists/' + list_id)
-        my_list = List(self.get_board(obj['idBoard']), obj['id'], name=obj['name'].encode('utf-8'))
+        my_list = List(self.get_board(obj['idBoard']), obj['id'],
+                       name=obj['name'].encode('utf-8'))
         my_list.closed = obj['closed']
         return my_list
 
     def get_member(self, member_id):
-        """ get a user/member object based on id """
+        """
+        Get a user/member object based on id
+        """
         return Member(self, member_id).fetch()
 
     # def _board_from_json(self, incoming_json):
@@ -88,12 +111,19 @@ class TrelloClient(object):
 
 
 class Board(object):
-    """Class representing a Trello board. Board attributes are stored as normal Python attributes;
-    access to all sub-objects, however, is always an API call (Lists, Cards).
+    """
+    Class representing a Trello board. Board attributes are stored as normal
+    Python attributes; access to all sub-objects, however, is always an API
+    call (Lists, Cards).
+
+    Pulled from py-trello, and modified slightly to be more compatible with
+    appengine; slight tweaks for PEP8
+    https://github.com/sarumont/py-trello
     """
 
     def __init__(self, board_id, name=''):
-        """Constructor.
+        """
+        Constructor.
 
         :client: Reference to a Trello object
         :board_id: ID for the board
@@ -109,7 +139,9 @@ class Board(object):
         return '<Board %s %s>' % (self.name, self.id)
 
     def fetch(self):
-        """Fetch all attributes for this board"""
+        """
+        Fetch all attributes for this board
+        """
         json_obj = fetch_json('/boards/' + self.id)
         self.name = json_obj['name'].encode('utf-8')
         self.description = json_obj.get('desc', '').encode('utf-8')
@@ -117,24 +149,33 @@ class Board(object):
         self.url = json_obj['url']
 
     def save(self):
-        """ may not need this """
+        """
+        may not need this since it doesn't do anything anyway
+        """
         pass
 
     def all_lists(self):
-        """Returns all lists on this board"""
+        """
+        Returns all lists on this board
+        """
         return self.get_lists('all')
 
     def open_lists(self):
-        """Returns all open lists on this board"""
+        """
+        Returns all open lists on this board
+        """
         return self.get_lists('open')
 
     def closed_lists(self):
-        """Returns all closed lists on this board"""
+        """
+        Returns all closed lists on this board
+        """
         return self.get_lists('closed')
 
     def get_lists(self, list_filter):
-        """ get a list of List objects from the board """
-        # error checking
+        """
+        get a list of List objects from the board
+        """
         json_lists = fetch_json(
             '/boards/' + self.id + '/lists',
             query_params={'cards': 'none', 'filter': list_filter})
@@ -147,7 +188,8 @@ class Board(object):
         return lists
 
     def add_list(self, name):
-        """Add a card to this list
+        """
+        Add a card to this list
 
         :name: name for the card
         :return: the card
@@ -161,20 +203,28 @@ class Board(object):
         return my_list
 
     def all_cards(self):
-        """Returns all cards on this board"""
+        """
+        Returns all cards on this board
+        """
         return self.get_cards('all')
 
     def open_cards(self):
-        """Returns all open cards on this board"""
+        """
+        Returns all open cards on this board
+        """
         return self.get_cards('open')
 
     def closed_cards(self):
-        """Returns all closed cards on this board"""
+        """
+        Returns all closed cards on this board
+        """
         return self.get_cards('closed')
 
     def get_cards(self, card_filter):
-        """ get a list of cards for this Board (Card objects will include their list_id) """
-        # error checking
+        """
+        Get a list of cards for this Board (Card objects will include their
+        list_id)
+        """
         json_obj = fetch_json(
             '/boards/' + self.id + '/cards',
             query_params={'filter': card_filter})
@@ -189,11 +239,18 @@ class Board(object):
 
 
 class List(object):
-    """Class representing a Trello list. List attributes are stored on the object, but access to
-    sub-objects (Cards) require an API call"""
+    """
+    Class representing a Trello list. List attributes are stored on the object,
+    but access to sub-objects (Cards) require an API call
+
+    Pulled from py-trello, and modified slightly to be more compatible with
+    appengine; slight tweaks for PEP8
+    https://github.com/sarumont/py-trello
+    """
 
     def __init__(self, board, list_id, name=''):
-        """Constructor
+        """
+        Constructor
 
         :board: reference to the parent board
         :list_id: ID for this list
@@ -207,13 +264,17 @@ class List(object):
         return '<List %s>' % self.name
 
     def fetch(self):
-        """Fetch all attributes for this list"""
+        """
+        Fetch all attributes for this list
+        """
         json_obj = fetch_json('/lists/' + self.id)
         self.name = json_obj['name'].encode('utf-8')
         self.closed = json_obj['closed']
 
     def list_cards(self):
-        """ fetch a list of Card objects for all cards in this list """
+        """
+        Fetch a list of Card objects for all cards in this list
+        """
         json_obj = fetch_json('/lists/' + self.id + '/cards')
         cards = list()
         for tmp_card in json_obj:
@@ -226,7 +287,8 @@ class List(object):
         return cards
 
     def add_card(self, name, desc=None):
-        """Add a card to this list
+        """
+        Add a card to this list
 
         :name: name for the card
         :return: the card
@@ -248,10 +310,15 @@ class Card(object):
     """
     Class representing a Trello card. Card attributes are stored on
     the object
+
+    Pulled from py-trello, and modified slightly to be more compatible with
+    appengine; slight tweaks for PEP8
+    https://github.com/sarumont/py-trello
     """
 
     def __init__(self, trello_list, card_id, name=''):
-        """Constructor
+        """
+        Constructor
 
         :trello_list: reference to the parent list
         :card_id: ID for this card
@@ -274,7 +341,9 @@ class Card(object):
         return '<Card %s>' % self.name
 
     def fetch(self):
-        """Fetch all attributes for this card"""
+        """
+        Fetch all attributes for this card
+        """
         json_obj = fetch_json(
             '/cards/' + self.id,
             query_params={'badges': False})
@@ -301,29 +370,39 @@ class Card(object):
 
     @property
     def create_date(self):
-        """ create a date for your card attributes """
+        """
+        Create a date for your card attributes
+        """
         self.fetch_actions()
         date_str = self.actions[0]['date'][:-5]
         return datetime.strptime(date_str, '%Y-%m-%dT%H:%M:%S')
 
     def set_description(self, description):
-        """ set description of the Card """
+        """
+        Set description of the Card
+        """
         self._set_remote_attribute('desc', description)
         self.description = description
 
     def set_closed(self, closed):
-        """ set this card as closed """
+        """
+        Set this card as closed
+        """
         self._set_remote_attribute('closed', closed)
         self.closed = closed
 
     def delete(self):
-        """ Delete this card permanently """
+        """
+        Delete this card permanently
+        """
         fetch_json(
             '/cards/' + self.id,
             http_method='DELETE',)
 
     def assign(self, member_id):
-        """ assign this card to one Member """
+        """
+        Assign this card to one Member
+        """
         # TODO: modify to send a list of Members
         fetch_json(
             '/cards/' + self.id + '/members',
@@ -331,7 +410,9 @@ class Card(object):
             post_args={'value': member_id, })
 
     def _set_remote_attribute(self, attribute, value):
-        """ touch this Card at Trello to update some attribute """
+        """
+        Touch this Card at Trello to update some attribute
+        """
         fetch_json(
             '/cards/' + self.id + '/' + attribute,
             http_method='PUT',
@@ -341,6 +422,10 @@ class Card(object):
 class Member(object):
     """
     Class representing a Trello member.
+
+    Pulled from py-trello, and modified slightly to be more compatible with
+    appengine; slight tweaks for PEP8
+    https://github.com/sarumont/py-trello
     """
 
     def __init__(self, client, member_id):
@@ -357,7 +442,9 @@ class Member(object):
         return '<Member %s>' % self.id
 
     def fetch(self):
-        """Fetch all attributes for this card"""
+        """
+        Fetch all attributes for this card
+        """
         json_obj = fetch_json(
             '/members/' + self.id,
             query_params={'badges': False})
@@ -371,44 +458,62 @@ class Member(object):
 
 
 class MainPage(webapp2.RequestHandler):
-    """ foo """
-
-    # def get(self):
-    #     """ answer a GET request with a simple form """
-    #     # TODO: add a basic_auth or something so the spammers don't find you
-    #     self.response.out.write("""
-    #       <html>
-    #         <body>
-    #           <form action="/postit" method="post">
-    #             <div><input type="test" name="to" value="default-icebox@address.com"></div>
-    #             <div><input type="test" name="from" value="ian.douglas@iandouglas.com"></div>
-    #             <div><input type="test" name="subject" value="my subject"></div>
-    #             <div><textarea name="text" rows="3" cols="60">here's my big idea</textarea></div>
-    #             <div><input type="submit" value="write data to Trello"></div>
-    #           </form>
-    #         </body>
-    #       </html>""")
+    """
+    Ian's urlencode
+    Catch an incoming POST request, parse the details, and post it to
+    Trello using the classes above.
+    """
 
     def post(self):
-        """ handle a post of data """
+        """
+        Handle a post of data from SendGrid's Parse engine
+        """
 
-        # write an 'OK' status so SendGrid gets a 200 status
-        # ideally, you'd just return a 200 status regardless
+        """
+        write an 'OK' status immediately so SendGrid gets a 200 status
+        ideally, you'd just return a 200 status regardless of getting an
+        error so that
+        (a) you can handle the error yourself, and
+        (b) SendGrid doesn't have to worry about getting hung up on your
+        failing code
+        """
         self.response.out.write('OK')
+
         trello = TrelloClient()
 
-        # use From address to denote who send this Card
-        card_from = self.request.get('from').split(' ')[-1].split('@')[0].replace('<', '').replace('>', '')
+        # use From address to denote who sent this Card
+        card_from = self.request.get('from').split(' ')[-1].split('@')[0]\
+            .replace('<', '').replace('>', '')
 
-        # get username of email recipient to fetch our target board
-        email_recipient = self.request.get('to').split(' ')[-1].split('@')[0].replace('<', '').replace('>', '')
+        """
+        get username of email recipient to fetch our target board
+
+        The username of your Email recipient is split with a dash into
+        "board name" and "list name". For example, an Email address of
+        todo-groceries@email.domain.com will look for a board called "todo"
+        and a list within that board called "groceries".
+
+        (the searches below for the board name and list name will deal with
+        lowercased names with stripped
+        whitespace and dashes, so for the example Email address above
+        (todo-groceries@email.domain.com) could have a board name of "ToDo"
+        or "To-Do" or "to do" or any such variation.
+        """
+        email_recipient = self.request.get('to').split(' ')[-1].split('@')[0]\
+            .replace('<', '').replace('>', '')
+
         target_board_name, target_list_name = email_recipient.split('-')
+
         if not target_board_name or not target_list_name:
-            print "cannot continue"
+            # TODO: send yourself an Email or write something in a log that
+            # you can catch this later, since SendGrid won't forward any
+            # information back to you in any way
             sys.exit()
 
-        target_board_name = target_board_name.replace(' ', '').replace('-', '').lower()
-        target_list_name = target_list_name.replace(' ', '').replace('-', '').lower()
+        target_board_name = target_board_name.replace(' ', '')\
+            .replace('-', '').lower()
+        target_list_name = target_list_name.replace(' ', '')\
+            .replace('-', '').lower()
 
         boards = trello.list_boards()
 
@@ -432,15 +537,26 @@ class MainPage(webapp2.RequestHandler):
 
             if found_list:
                 found_list.add_card(
-                    name="New card from " + card_from,
-                    # trello descriptions can take Markdown, so format this however you
-                    desc=self.request.get('subject') + "\n\n" + self.request.get('text')
-                    )
 
+                    # TODO: you could parse out the message subject and use
+                    # that as the name of the card (see the .get('subject')
+                    # below)
+                    name="New card from " + card_from,
+
+                    # trello descriptions can take Markdown, so format this
+                    # however you like
+                    desc=self.request.get('subject') + "\n\n" +
+                         self.request.get('text')
+                    )
+        else:
+            # TODO: board not found, you should probably log this or email
+            # yourself (or not, if it's a spammer just sending messages to
+            # your email address
+            sys.exit()
 
 def build_url(path, query={}):
     """
-    Builds a Trello URL.
+    Builds a URL to talk to Trello
 
     :path: URL path
     :params: dict of key-value pairs for the query string
@@ -462,8 +578,11 @@ def build_url(path, query={}):
     return domain, url, urlparams
 
 
-def fetch_json(uri_path, http_method='GET', headers={}, query_params={}, post_args={}):
-    """ Fetch some JSON from Trello """
+def fetch_json(uri_path, http_method='GET', headers={}, query_params={},
+               post_args={}):
+    """
+    Fetch some JSON from Trello
+    """
 
     if http_method in ("POST", "PUT", "DELETE"):
         headers['Content-type'] = 'application/json'
@@ -476,12 +595,7 @@ def fetch_json(uri_path, http_method='GET', headers={}, query_params={}, post_ar
     if http_method == "GET":
         http_client.request(http_method, url)
     elif http_method == "POST":
-        http_client.request(
-            http_method,
-            url,
-            json.dumps(post_args),
-            headers
-            )
+        http_client.request(http_method, url, json.dumps(post_args), headers)
 
     response = http_client.getresponse()
     content = response.read()
@@ -495,7 +609,7 @@ def fetch_json(uri_path, http_method='GET', headers={}, query_params={}, post_ar
     return json.loads(content)
 
 
-# this is where App Engine actually listens to a URL endpoint (foo.appspot.com/postit)
+# this is where App Engine actually listens to a URL endpoint
+# (foo.appspot.com/postit)
 # to run all this code
-app = webapp2.WSGIApplication([('/postit', MainPage)],
-                              debug=True)
+app = webapp2.WSGIApplication([('/postit', MainPage)], debug=True)

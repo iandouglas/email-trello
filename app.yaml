@@ -1,4 +1,4 @@
-application: email-trello
+application: sendgrid-email-trello
 version: 1
 runtime: python27
 api_version: 1
