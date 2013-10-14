@@ -40,45 +40,48 @@ There are some key requirements here before you can get started:
 - Access tp modify DNS records for that domain name
 
 
+Sign up for Google App Engine (free)
 ---------------
-1. Sign up for Google App Engine (free)
 
-1a. Sign up for a Google App Engine account.
+1. Sign up for a Google App Engine account.
 Read more about it here: https://appengine.google.com/ You can set up a free
 account with them.
 
-1b. Set up a new application.
+2. Set up a new application.
 Follow Google's instructions for adding a new application.
 
----------------
-2. Sign up for Trello (free)
 
-2a. Sign up for a free Trello account
+Sign up for Trello (free)
+---------------
+
+1. Sign up for a free Trello account
 (if you don't already have one)
 
-2b. Get your API key, and get a "permanent read/write token"
+2. Get your API key, and get a "permanent read/write token"
 curl "https://trello.com/1/authorize?key=YOURAPIKEYGOESHERE&name=My+Application&expiration=never&response_type=token"
 
----------------
-3. Modify my code (free)
 
-3a. Modify app.yaml
+Modify my code (free)
+---------------
+
+1. Modify app.yaml
 Set your Google App Engine application name at the top of the app.yaml file.
 Feel free to change the version number, but everything else can stay the same.
 
-3b. Modify the email-trello.py
+2. Modify the email-trello.py file
 Put your API key and permanent token at the top of the script.
 
+
+Sign up for SendGrid (free)
 ---------------
-4. Sign up for SendGrid (free)
 
-4a. Get a free account
-You can get a free "developer" account via http://hack.sendgrid.com/ to send up
-to 200 messages per day. Once you reach your 200 message limit per day, it will
-block you from sending any additional messages until they reset your credits for
-the next day.
+1. Get a free account
+You can get a free "developer" account via http://sendgrid.com/user/signup to
+send up to 200 messages per day. Once you reach your 200 message limit per day,
+it will block you from sending any additional messages until they reset your
+credits for the next day.
 
-4b. Once your SendGrid account is provisioned, follow the instructions to set
+2. Once your SendGrid account is provisioned, follow the instructions to set
 up the "Inbound Parse" feature:
     http://sendgrid.com/docs/API%20Reference/Webhooks/parse.html
 
@@ -87,7 +90,7 @@ want to call call it "trello.yourdomain.com" or "todo.yourdomain.com". Per the
 SendGrid instructions, you will need to add an MX record for that subdomain to
 point to mx.sendgrid.net
 
-4c. Set up your Parse API url for POST operations
+3. Set up your Parse API url for POST operations
 Visit http://sendgrid.com/developer/reply (once you're logged into SendGrid) and
 add your subdomain and App Engine application URL
 (ie http://yourprojectname.appspot.com/postit). This step will require that the
