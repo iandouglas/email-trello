@@ -1,3 +1,7 @@
+# abandonware, use at your own risk
+
+
+
 Utilize SendGrid and App Engine to Email yourself TODO cards on Trello
 
 This code released under Creative Commons Attribution-Sharealike 3.0:
