@@ -1,8 +1,8 @@
 # abandonware, use at your own risk
+Google App Engine has changed, so the instructions are out of date. For example, the newer Google Cloud SDK will
+run as 'gcloud preview app deploy' after you authenticate and set your project.
 
-
-
-Utilize SendGrid and App Engine to Email yourself TODO cards on Trello
+# Utilize SendGrid and App Engine to Email yourself TODO cards on Trello
 
 This code released under Creative Commons Attribution-Sharealike 3.0:
 http://creativecommons.org/licenses/by-sa/3.0/
@@ -10,41 +10,35 @@ http://creativecommons.org/licenses/by-sa/3.0/
 See the LICENSE file for additional license information including a copyright
 from another author.
 
+---
+This project was a proof-of-concept project I built for a talk at PyCon Canada in November of 2012. 
 
-This project was a proof-of-concept project I built during PyCon Canada in
-November of 2012. Some buddies (hitsend.ca) were using Trello but during PyCon
-they were constantly sending "To-Do" Emails to one another, and add them as R&D
-spikes on Trello for an upcoming sprint of work. I imagined that with a few API
-calls, that we could rig up a way to let them send an Email through SendGrid's
-"Inbound Parse" mechanism to POST data to a URL somewhere, and write a new
+Some buddies at [SoapBox](https://soapboxhq.com) were using Trello but during PyCon they were constantly
+sending "To-Do" Emails to one another, and add them as R&D spikes on Trello for an upcoming sprint
+of work. I had the idea that with a few API calls, we could rig up a way to let them send an Email
+through SendGrid's "Inbound Parse" mechanism to POST data to a URL somewhere, and write a new
 Trello card for themselves.
 
-After a brief search, not only did I not find any existing open source that
-handled this, I found a service that would charge you $10/month for this very
-service. Knowing that the quotas that App Engine provides (before maxing out
-the 200 Emails per day of a free SendGrid developer account) would be free for
-hosting, I set out to write a handler.
+After a brief search, not only did I not find any existing open source that handled this, I found a
+service that would charge you $10/month for a similar service. Knowing that the quotas that App
+Engine provides (before maxing out the 200 (at the time) Emails per day of a free SendGrid developer
+account) would be free for hosting, I set out to write a handler.
 
-I found py-trello on GitHub (https://github.com/sarumont/py-trello) and due
-props belong to them for the initial work they did to set up a basic
-communication setup with Trello for fetching and writing data. The only problem
-was that the code wouldn't work natively with Google App Engine (for one, they
-don't support httplib2 which py-trello used for their http communications).
+I found [py-trello on GitHub](https://github.com/sarumont/py-trello) and due props belong to them
+for the initial work they did to set up a basic communication setup with Trello for fetching and
+writing data. The only problem was that the code wouldn't work natively with Google App Engine
+(for one, GAE doesn't support httplib2 which py-trello used for their http communications).
+Long story short, I rewrote a significant chunk of their code, removed some bits, and here we are.
 
-Long story short, I rewrote a significant chunk of their code. removed some
-bits, and here we are.
-
-Original code I used:
-https://github.com/sarumont/py-trello/blob/b6d9ffa6e2f009a038326da3b549dfbe51c4fc60/trello/__init__.py
-
+Original code I used and modified:
+- https://github.com/sarumont/py-trello/blob/b6d9ffa6e2f009a038326da3b549dfbe51c4fc60/trello/__init__.py
 
 There are some key requirements here before you can get started:
-
 - A Domain Name
-- Access tp modify DNS records for that domain name
+- Access to modify DNS records for that domain name
 
 
-Sign up for Google App Engine (free)
+## Sign up for Google App Engine (free)
 ---------------
 
 1. Sign up for a Google App Engine account.
@@ -55,7 +49,7 @@ account with them.
 Follow Google's instructions for adding a new application.
 
 
-Sign up for Trello (free)
+## Sign up for Trello (free)
 ---------------
 
 1. Sign up for a free Trello account
@@ -65,7 +59,7 @@ Sign up for Trello (free)
 curl "https://trello.com/1/authorize?key=YOURAPIKEYGOESHERE&name=My+Application&expiration=never&response_type=token"
 
 
-Modify my code (free)
+## Modify my code (free)
 ---------------
 
 1. Modify app.yaml
@@ -76,7 +70,7 @@ Feel free to change the version number, but everything else can stay the same.
 Put your API key and permanent token at the top of the script.
 
 
-Sign up for SendGrid (free)
+## Sign up for SendGrid (free)
 ---------------
 
 1. Get a free account
@@ -191,4 +185,4 @@ documentation.
 I hold no liability or responsibility for your use of this code. I'm happy to
 support you as best I can, but you're mostly on your own.
 
-My employer, SendGrid Inc, is not liable in any way for your use of this code.
+My employer at the time, SendGrid Inc, is not liable in any way for your use of this code, nor am I.
